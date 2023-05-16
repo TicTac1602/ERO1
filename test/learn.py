@@ -41,3 +41,12 @@ nx.set_edge_attributes(graph, edge_attributes, 'distance')
 
 # Accès à la valeur d'arc pour un segment de route spécifique
 distance_of_edge = graph.edges[start_node, shortest_path[1]]['distance']
+
+########################
+# Display un itinéraire#
+########################
+
+fig, ax = ox.plot_graph_route(graph, shortest_path, route_linewidth=6, node_size=0, bgcolor='k')
+##################################################################################################################
+#Plus d'info ici : https://github.com/gboeing/osmnx-examples/blob/v0.13.0/notebooks/00-osmnx-features-demo.ipynb #
+##################################################################################################################
