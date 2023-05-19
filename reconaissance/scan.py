@@ -41,7 +41,7 @@ def scan(place_name, verbose=False):
 
     # Tracer l'itinéraire sur OSMnx
     start_time = time.time() 
-    fig, ax = ox.plot_graph_routes(graph.to_undirected(), chemin_parcouru, route_linewidth=6, node_size=0, bgcolor='w', show=verbose)
+    fig, ax = ox.plot_graph_routes(GU, chemin_parcouru, route_linewidth=6, node_size=0, bgcolor='w', show=verbose)
     end_time = time.time()
     execution_time = end_time - start_time  # Calcul du temps d'exécution
 
