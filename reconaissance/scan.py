@@ -27,27 +27,112 @@ def scan(place_name, verbose=False):
     graph = ox.graph_from_place(place_name, network_type="drive")
     G = ox.plot_graph(graph, show=verbose)
     GU = graph.to_undirected()
-    # Parcours des arêtes et calcul de la distance totale
-    chemin_parcouru, distance_totale = parcourir_aretes(GU)
+    if not nx.is_weakly_connected(graph):
+        print("Le graphe n'est pas connexe.")
 
-    # Affichage du chemin parcouru
+    chemin_parcouru = None
+    distance_totale = None
+
+    # Parcours des arêtes et calcul de la distance totale
+    found, chemin_parcouru, distance_totale = make_it_eulerian(GU)
+
+    if not found:
+        print("Calcul du chemin en glouton")
+        chemin_parcouru, distance_totale = parcourir_aretes(GU)
+
     if verbose:
         print("Chemin calculer")
+        for u, v,data in graph.edges(data=True):
+            print(data['length'])
 
-    # Affichage de la distance totale parcourue
-    if verbose:
+        print("Taille du réseau routier : ", real_distance, "m")
         print("Distance totale parcourue :", distance_totale, "m")
-        print("Creation du plan avec l'itineraire (Cette operation peut etre longue) ETA :" , 0.09* len(chemin_parcouru), " secondes")
+        print("Creation du plan avec l'itineraire (Cette operation peut etre longue) ETA :" , 0.08 * len(chemin_parcouru), " secondes")
 
-    # Tracer l'itinéraire sur OSMnx
-    start_time = time.time() 
-    fig, ax = ox.plot_graph_routes(GU, chemin_parcouru, route_linewidth=6, node_size=0, bgcolor='w', show=verbose)
-    end_time = time.time()
-    execution_time = end_time - start_time  # Calcul du temps d'exécution
-
-    print("Temps d'exécution : ", execution_time, " secondes avec ", len(chemin_parcouru), " arretes")
+        # Tracer l'itinéraire sur OSMnx
+        start_time = time.time() 
+        ox.plot_graph_routes(GU, chemin_parcouru, route_linewidth=6, node_size=0, bgcolor='w', show=True)
+        end_time = time.time()
+        execution_time = end_time - start_time  # Calcul du temps d'exécution
+        print("Temps d'exécution : ", execution_time, " secondes avec ", len(chemin_parcouru), " arretes")
+    print("Fin du scan")
     return chemin_parcouru, distance_totale
 
+def make_it_eulerian(graph):
+    odd_nodes = [node for node in graph.nodes if graph.degree(node) % 2 != 0]
+    
+    # Transformer le graph pour ajouter les arcs pour que ce soit un graphe avec que des degres pair
+    
+    odd_nodes = [node for node in graph.nodes if graph.degree(node) % 2 != 0]
+    if not odd_nodes:
+        eulerian_cycle = find_eulerian_circuit(len(graph.nodes()),graph.edges(data=True))
+        distance = sum(graph[u][v]['length'] for u, v in eulerian_cycle)
+        return True, eulerian_cycle, distance
+    else:
+        print("Pas de cycle eulerien apres ajout d'arc")
+        return False, None, 0
+
+def odd_vertices(n, edges):
+    deg = [0] * n
+    for (a,b) in edges:
+        deg[a] += 1
+        deg[b] += 1
+    return [a for a in range(n) if deg[a] % 2]
+
+def is_edge_connected(n, edges):
+    if n == 0 or len(edges) == 0:
+        return True
+    # Convert to adjacency list
+    succ = [[] for a in range(n)]
+    for (a,b) in edges:
+        succ[a].append(b)
+        succ[b].append(a)
+    # BFS over the graph, starting from one extremity of the first edge
+    touched = [False] * n
+    init = edges[0][0]
+    touched[init] = True
+    todo = [init]
+    while todo:
+        s = todo.pop()
+        for d in succ[s]:
+            if touched[d]:
+                continue
+            touched[d] = True
+            todo.append(d)
+    for a in range(n):
+        if succ[a] and not touched[a]:
+            return False
+    return True
+
+def is_eulerian(n, edges):
+    return is_edge_connected(n, edges) and not odd_vertices(n, edges)
+
+def find_eulerian_circuit(n, edges):
+    assert is_eulerian(n, edges)
+    if len(edges) == 0:
+        return []
+    cycle = [edges[0][0]] # start somewhere
+    while True:
+        rest = []
+        for (a, b) in edges:
+            if cycle[-1] == a:
+                cycle.append(b)
+            elif cycle[-1] == b:
+                cycle.append(a)
+            else:
+                rest.append((a,b))
+        if not rest:
+            assert cycle[0] == cycle[-1]
+            return cycle[0:-1]
+        edges = rest
+        if cycle[0] == cycle[-1]:
+            # Rotate the cycle so that the last state
+            # has some outgoing edge in EDGES.
+            for (a, b) in edges:
+                if a in cycle:
+                    idx = cycle.index(a)
+                    cycle = cycle[idx:-1] + cycle[0:idx+1]
+                    break
 
 # Parcours de toutes les arêtes du graphe
 def parcourir_aretes(graph):
@@ -56,7 +141,7 @@ def parcourir_aretes(graph):
     for u, v, k, data in graph.edges(keys=True, data=True):
         chemin.append([u, v])
         distance = data["length"]
-        distance_totale += distance * 2  # Ajouter la distance à la distance totale allez et retour
+        distance_totale += distance  # Ajouter la distance
         chemin.append([v, u])
 
     return chemin, distance_totale
