@@ -26,27 +26,41 @@ start_point = (45.523, -73.603)  # Coordonnées du point de départ
 end_point = (45.517, -73.582)  # Coordonnées du point d'arrivée
 
 # Recherche des nœuds les plus proches dans le graphe
-start_node = ox.distance.nearest_nodes(graph, start_point[1], start_point[0], method='haversine')
-end_node = ox.distance.nearest_nodes(graph, end_point[1], end_point[0], method='haversine')
+start_node = ox.distance.nearest_nodes(
+    graph, start_point[1], start_point[0], method="haversine"
+)
+end_node = ox.distance.nearest_nodes(
+    graph, end_point[1], end_point[0], method="haversine"
+)
 
 # Calcul du chemin le plus court (par distance) entre les deux nœuds
-shortest_path = nx.shortest_path(graph, source=start_node, target=end_node, weight='length')
+shortest_path = nx.shortest_path(
+    graph, source=start_node, target=end_node, weight="length"
+)
 
 # Récupération de la distance totale du chemin le plus court
-total_distance = sum(nx.get_edge_attributes(graph, 'length')[edge] for edge in zip(shortest_path[:-1], shortest_path[1:]))
+total_distance = sum(
+    nx.get_edge_attributes(graph, "length")[edge]
+    for edge in zip(shortest_path[:-1], shortest_path[1:])
+)
 
 # Attribution de la distance comme valeur d'arc pour chaque segment de route
-edge_attributes = {(u, v): graph.edges[u, v]['length'] for u, v in zip(shortest_path[:-1], shortest_path[1:])}
-nx.set_edge_attributes(graph, edge_attributes, 'distance')
+edge_attributes = {
+    (u, v): graph.edges[u, v]["length"]
+    for u, v in zip(shortest_path[:-1], shortest_path[1:])
+}
+nx.set_edge_attributes(graph, edge_attributes, "distance")
 
 # Accès à la valeur d'arc pour un segment de route spécifique
-distance_of_edge = graph.edges[start_node, shortest_path[1]]['distance']
+distance_of_edge = graph.edges[start_node, shortest_path[1]]["distance"]
 
 ########################
 # Display un itinéraire#
 ########################
 
-fig, ax = ox.plot_graph_route(graph, shortest_path, route_linewidth=6, node_size=0, bgcolor='k')
+fig, ax = ox.plot_graph_route(
+    graph, shortest_path, route_linewidth=6, node_size=0, bgcolor="k"
+)
 ##################################################################################################################
-#Plus d'info ici : https://github.com/gboeing/osmnx-examples/blob/v1.3.0/notebooks/00-osmnx-features-demo.ipynb #
+# Plus d'info ici : https://github.com/gboeing/osmnx-examples/blob/v1.3.0/notebooks/00-osmnx-features-demo.ipynb #
 ##################################################################################################################
