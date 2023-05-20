@@ -9,7 +9,7 @@ sys.path.append(reconaissance_path)
 from scan import scan
 
 # Call the scan function
-scan("outremont", False)
+scan("outremont",True)
 # scan("montRoyal") # Je deconseille le verbose 
 # scan("verdun", True)
 # scan("riviere") # Je deconseille le verbose 

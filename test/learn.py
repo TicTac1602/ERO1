@@ -48,5 +48,5 @@ distance_of_edge = graph.edges[start_node, shortest_path[1]]['distance']
 
 fig, ax = ox.plot_graph_route(graph, shortest_path, route_linewidth=6, node_size=0, bgcolor='k')
 ##################################################################################################################
-#Plus d'info ici : https://github.com/gboeing/osmnx-examples/blob/v0.13.0/notebooks/00-osmnx-features-demo.ipynb #
+#Plus d'info ici : https://github.com/gboeing/osmnx-examples/blob/v1.3.0/notebooks/00-osmnx-features-demo.ipynb #
 ##################################################################################################################
