@@ -11,8 +11,8 @@ from scan import scan
 # Import the scan function from reconaissance.scan
 
 # Call the scan function
-# scan("outremont", True):
-# scan("montRoyal",True) # Je deconseille le verbose
+scan("outremont")
+# scan("montRoyal") # Je deconseille le verbose
 # scan("verdun", True)
-# scan("riviere",True) # Je deconseille le verbose
-scan("saintLeonard",True) # Je deconseille le verbose
+# scan("riviere") # Je deconseille le verbose
+# scan("saintLeonard") # Je deconseille le verbose

@@ -119,14 +119,15 @@ def parcourir_aretes(graph):
 
 def parcourir_aretes_euler(graph,verbose):
     if not nx.is_eulerian(graph):
-        return "Le graphe n'est pas eulérien."
+        return None,None
     cycle = find_eulerian_cycle(graph)
     # Pretty print of the cycle
-    if (not verbose):
+    if not verbose:
         for i in range(len(cycle) - 1, -1, -1):
             print(cycle[i], end = "")
             if i:
                 print(" -> ", end = "")
+        print("")
     list = [[cycle[i], cycle[i+1]] for i in range(len(cycle)-1)]
     distance_totale = sum(graph.get_edge_data(u, v)[0]["length"] for u, v in list)
     return list, distance_totale
