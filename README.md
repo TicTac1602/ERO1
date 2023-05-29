@@ -9,7 +9,7 @@ Ainsi que l'architecture du projet.
 
 ---
 
-## Les librairies nécessaires📚 :
+## Les librairies nécessaires 📚 :
 
 - `osmnx`
 
@@ -17,13 +17,20 @@ Si vous souhaitez installer les librairies passer par pip avec cette commande:
 
 - `pip install osmnx`
 
-## Utiliser notre projet👨‍💻 :
+## Utiliser notre projet 🔎 :
 
-Il vous faudra effectuer les commandes suivantes :
+Depuis la racine faites `python main.py -h`
+
+Vous aurez plusieurs possibilité de commandes, voici une liste non exhaustive :
+
+- `--place` avec le quartier souahité
+- `--scenario` avec le scenario souhaité
+
+Par défault si aucun arguments n'est donné vous lancer le programme de "Déneigement de Montreal"
 
 Il ne vous reste plus qu’à utiliser notre superbe programme 🎉
 
-## L'architecture du projet :
+## L'architecture du projet 📐 :
 
 Le rendu doit suivre les contraintes ci-dessous, elles sont liées aux au travail de recherche et développement
 qu’on souhaite vous voir faire.
