@@ -1,5 +1,6 @@
 import osmnx as ox
 import networkx as nx
+
 import matplotlib.pyplot as plt
 
 place_name = "Rivière-des-Prairies-Pointe-aux-Trembles, Montreal, Canada"
