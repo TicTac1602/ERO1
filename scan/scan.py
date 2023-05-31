@@ -168,7 +168,7 @@ def make_it_eulerian(graph,verbose):
         # Recalcul des nœuds de degré impair pour voir si on a fini
         odd_nodes = [node for node in graph.nodes if graph.degree(node) % 2 != 0]
         if (len(odd_nodes)%100 == 0):
-            print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :",round(((nb_todo -len(odd_nodes))/nb_todo)*100,2),"%")
+            print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :",round(((nb_todo -len(odd_nodes))/nb_todo)*100,2),"%",end='\r')
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Le graphe a été rendu Eulerien")
     eulerian_cycle, distance = parcourir_aretes_euler(graph,verbose)
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
