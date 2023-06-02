@@ -224,12 +224,17 @@ def make_it_eulerian(graph):
                 distances = dijkstra_inverted_reinject(graph, node, set())
                 graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0]) 
             else :
+                found = False
                 for distance,node_end,path in distances:
                     #link to a bad nodes that will help the situation
                     if node_end in unbalanced_nodes and graph.in_degree(node_end) < graph.out_degree(node_end):
+                        found = True
                         # make a path to this node_end
                         add_path(graph,path)
                         break
+                if not found: 
+                    distances = dijkstra_inverted_reinject(graph, node, set())
+                    graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0])
         else:
             # ajouter un arc entrant
             distances = dijkstra_inverted(graph, node, set())
@@ -247,6 +252,8 @@ def make_it_eulerian(graph):
 
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
+        if round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2) >= 83.8 :
+            print("debug")
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Le graphe a été rendu Eulerien")
     chemin,distance_totale = parcourir_aretes_euler(graph)
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
@@ -291,9 +298,4 @@ def trouver_cycle_eulerien(graph):
     
     return sommets_visites
 
-
-deneigement_euler("outremont",deneigeuse_T1)
-deneigement_euler("verdun",deneigeuse_T1)
-deneigement_euler("saintLeonard",deneigeuse_T1)
-deneigement_euler("montRoyal",deneigeuse_T1)
 deneigement_euler("riviere",deneigeuse_T2)
