@@ -15,7 +15,23 @@ lieux = {
     "saintLeonard": "Saint-Léonard, Montreal, Canada"
 }
 
-def deneigement_euler(place_name):
+deneigeuse_T1 = {
+    "vitesse" :  10,
+    "cout_jour": 500,
+    "cout_kilo": 1.1,
+    "cout_horaires_8":1.1,
+    "cout_horaires_8p":1.3
+}
+
+deneigeuse_T2 = {
+    "vitesse" :  20,
+    "cout_jour": 800,
+    "cout_kilo": 1.3,
+    "cout_horaires_8":1.3,
+    "cout_horaires_8p":1.5
+}
+
+def deneigement_euler(place_name,vehicule):
     """
     Effectue le déneigement d'un quartier
     @param place_name: Nom de la région à déneiger
@@ -31,20 +47,43 @@ def deneigement_euler(place_name):
 
     # Initialisation du graphe
     graph = ox.graph_from_place(place_name, network_type="drive")
-    # convert your MultiDiGraph to a DiGraph without parallel edges
-    # D = ox.utils_graph.get_digraph(graph)
+    ox.plot_graph(graph)
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graphique de la région",place_name, "chargé !")
+
     # Situation initiale
     chemin_parcouru = None
     distance_totale = None
+    reel_distance = 0
+    for u, v, data in graph.edges(data=True):
+        reel_distance += data["length"]
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Surface réelle du quartier :",round(reel_distance/1000,2), "km")
 
     start = time.time()
-    visualize_condensation_graph(graph)
     fix_dead_end(graph)
     fix_source(graph)
-    found, chemin_parcouru, distance_totale = make_it_eulerian(graph)
-    print(chemin_parcouru,distance_totale)
+    chemin_parcouru, distance_totale = make_it_eulerian(graph)
     end = time.time()
 
+    # Affichage des informations
+    time_travel = (distance_totale/1000)/vehicule["vitesse"]
+    daily_cost = math.ceil(time_travel/24)
+
+    cout_journalier = daily_cost*vehicule["cout_jour"]
+    if time_travel > 8 : 
+        cout_journalier += 8*vehicule["cout_horaires_8"]
+        time_travel -= 8
+        cout_journalier += math.ceil(time_travel)*vehicule["cout_horaires_8p"]
+        time_travel +=8
+    else : 
+        cout_journalier += math.ceil(time_travel)*vehicule["cout_horaires_8"]
+    cout_journalier += math.ceil(distance_totale/1000)*vehicule["cout_kilo"]
+
+
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Chemin trouvé en",round(end - start,4), "s")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Distance totale parcourue :",round(distance_totale/1000,2), "km")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Temps estimé du parcours :",round(time_travel,2) ,"h")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Cout estimé du déneigement :",cout_journalier  ,"€")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Fin du déneigement")
     return chemin_parcouru, distance_totale
 
 def dijkstra(graph, node, visited):
@@ -144,13 +183,6 @@ def dijkstra_reinject(graph, node, visited):
                 heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
     return res
 
-def visualize_condensation_graph(condensation_graph,node_to_find=None):
-    pos = nx.spring_layout(condensation_graph)
-    nx.draw(condensation_graph, pos, with_labels=False, node_size=50, node_color='lightblue', edge_color='gray', arrows=True)
-    nx.draw_networkx_nodes(condensation_graph, pos, nodelist=node_to_find, node_color='red', node_size=100)
-    plt.title("Graphe")
-    plt.show()
-
 def fix_source(graph):
     node_todo=[element for element in graph.nodes if graph.in_degree(element)==0]
     for u in node_todo:
@@ -190,7 +222,7 @@ def make_it_eulerian(graph):
             distances = dijkstra(graph, node, set())
             if not distances:
                 distances = dijkstra_inverted_reinject(graph, node, set())
-                graph.add_edge(node, distances[-1][1], directed=True, length=distances[1][0]) 
+                graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0]) 
             else :
                 for distance,node_end,path in distances:
                     #link to a bad nodes that will help the situation
@@ -215,11 +247,11 @@ def make_it_eulerian(graph):
 
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Le graphe a été rendu Eulerien")
+    chemin,distance_totale = parcourir_aretes_euler(graph)
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
 
-    visualize_condensation_graph(graph,unbalanced_nodes)
-    chemin,distance_total=parcourir_aretes_euler(graph,unbalanced_nodes)
-
-    return True,chemin,distance_total
+    return chemin,distance_totale
 
 def add_path(graph,path):
     for i in range(len(path) - 1):
@@ -228,7 +260,7 @@ def add_path(graph,path):
         edge_length = graph.get_edge_data(source, destination)[0]["length"]
         graph.add_edge(source, destination, directed=False, length=edge_length)
 
-def parcourir_aretes_euler(graph,sources):
+def parcourir_aretes_euler(graph):
     """
     Parcourt les arêtes du graphe eulérien pour former un cycle eulérien.
 
@@ -239,54 +271,29 @@ def parcourir_aretes_euler(graph,sources):
 
     if not nx.is_eulerian(graph):
         return None, None
-    cycle = find_eulerian_cycle(graph)
-    print(cycle)
+    cycle = trouver_cycle_eulerien(graph)
     list = [[cycle[i], cycle[i + 1]] for i in range(len(cycle) - 1)]
     distance_totale = sum(graph.get_edge_data(u, v)[0]["length"] for u, v in list)
     return list, distance_totale
 
-def find_eulerian_cycle(graph):
-    """
-    Trouve un cycle eulérien dans le graphe.
-
-    @param graph: Graphe dans lequel chercher un cycle eulérien.
-    @return: Liste des nœuds parcourus dans le cycle eulérien.
-    """
-
-    if not nx.is_eulerian(graph):
+def trouver_cycle_eulerien(graph):
+    # Vérifier si le graphe est fortement connexe
+    if not nx.is_strongly_connected(graph) and nx.is_eulerian(graph):
         return None
-
-    # Copier le graphe pour effectuer les modifications
-    modified_graph = graph.copy()
-
-    # Liste pour stocker le cycle eulérien
-    curr_path = [list(modified_graph.nodes())[0]]
-    eulerian_cycle = []
-    visited_edges = set()
-    current_node = curr_path[0]
-    while len(curr_path):
-        neighbors = list(modified_graph.successors(current_node))
-        next_node = None
-
-        # Find the next unvisited neighbor
-        for neighbor in neighbors:
-            edge = (current_node, neighbor)
-            reverse_edge = (neighbor, current_node)
-            if edge not in visited_edges and reverse_edge not in visited_edges:
-                next_node = neighbor
-                visited_edges.add(edge)
-                break
-
-        if next_node is not None:
-            curr_path.append(current_node)
-            modified_graph.remove_edge(current_node, next_node)
-            current_node = next_node
-        else:
-            eulerian_cycle.append(current_node)
-            current_node = curr_path[-1]
-            curr_path.pop()
-
-    return eulerian_cycle
+    
+    # Trouver le cycle eulerien
+    cycle_eulerien = list(nx.eulerian_circuit(graph))
+    
+    # Créer la liste des sommets visités
+    sommets_visites = [cycle_eulerien[0][0]]
+    for arc in cycle_eulerien:
+        sommets_visites.append(arc[1])
+    
+    return sommets_visites
 
 
-deneigement_euler("verdun")
+deneigement_euler("outremont",deneigeuse_T1)
+deneigement_euler("verdun",deneigeuse_T1)
+deneigement_euler("saintLeonard",deneigeuse_T1)
+deneigement_euler("montRoyal",deneigeuse_T1)
+deneigement_euler("riviere",deneigeuse_T2)
