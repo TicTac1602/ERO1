@@ -66,7 +66,30 @@ def dijkstra(graph, node, visited):
                 edge_length = graph.get_edge_data(current_node, neighbor)[0]["length"]
                 heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
     return res
+def dijkstra_inverted(graph, node, visited):
+    """
+    Effectue l'algorithme de Dijkstra à partir d'un nœud donné dans le graphe.
 
+    @param graph: Graphe à parcourir.
+    @param node: Nœud de départ du parcours.
+    @param visited: Ensemble des nœuds visités.
+    @return: Tuple contenant le nœud de degré impair ayant la plus petite distance, la distance pour y arriver et le chemin parcouru.
+    """
+
+    heap = []
+    heapq.heappush(heap, (0, node, [node]))
+    res = []
+    while heap:
+        distance, current_node, path = heapq.heappop(heap)
+        visited.add(current_node)
+        if len(visited) > 1 and graph.in_degree(current_node) != graph.out_degree(current_node):
+            # Sélection du nœud de degré impair ayant la plus petite distance
+            res.append((distance,current_node,path))
+        for neighbor in graph.predecessors(current_node):
+            if neighbor not in visited:
+                edge_length = graph.get_edge_data(neighbor, current_node)[0]["length"]
+                heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
+    return res
 def make_it_eulerian(graph):
     """
     Transforme le graphe en un graphe eulérien en ajoutant des arêtes supplémentaires.
@@ -103,6 +126,63 @@ def make_it_eulerian(graph):
     eulerian_cycle, distance = parcourir_aretes_euler(graph)
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
     return True, eulerian_cycle, distance
+def make_it_eulerian2(graph):
+    """
+    Transforme le graphe en un graphe eulérien en ajoutant des arêtes supplémentaires.
+
+    @param graph: Graphe à transformer en graphe eulérien.
+    @return: Tuple contenant un indicateur si un chemin eulérien a été trouvé, le chemin parcouru (liste d'arêtes) et la distance totale parcourue (float).
+    """
+    first=True
+    while(first or len(unbalanced_nodes)>2):
+        first=False
+        unbalanced_nodes = []
+        for node in graph:
+            in_degree = graph.in_degree(node)
+            out_degree = graph.out_degree(node)
+            if in_degree != out_degree:
+                unbalanced_nodes.append(node)
+        node= unbalanced_nodes[0]
+        if(node==209387147):
+            print("lol")
+        if(graph.out_degree(node)==0):
+            edge_length = graph.get_edge_data(list(graph.predecessors(node))[0], node)[0]["length"]
+            graph.add_edge(node, list(graph.predecessors(node))[0], directed=True, length=edge_length)
+            continue
+
+        if(graph.in_degree(node)>graph.out_degree(node)):
+                # ajouter un arc sortant
+            out_nodes = list(graph.predecessors(node))
+            # graph.add_edge(node, out_nodes[0], directed=True, length=1) 
+            distances = dijkstra(graph, node, set())
+            for distance,node_end,path in distances:
+                if(node_end  in unbalanced_nodes):
+                    # make a path to this node_end
+                    add_path(graph,path)
+                    break
+
+        else:
+
+            # ajouter un arc entrant
+            out_nodes = list(graph.predecessors(node))
+            # graph.add_edge(node, out_nodes[0], directed=True, length=1) 
+            distances = dijkstra_inverted(graph, node, set())
+            for distance,node_end,path in distances:
+                if(node_end  in unbalanced_nodes):
+                    # make a path to this node_end
+                    inverted_list = path[::-1]
+                    add_path(graph,inverted_list)
+                    break
+            out_nodes = list(graph.successors(node))
+            graph.add_edge( out_nodes[0],node, directed=True, length=10) 
+            
+    return True, eulerian_cycle, distance
+def add_path(graph,path):
+    while(len(path)>1):
+        edge_length = graph.get_edge_data(path[0], path[1])[0]["length"]
+        graph.add_edge(path[0], path[1], directed=True, length=edge_length)
+        path.pop(0)
+    return
 
 def parcourir_aretes_euler(graph):
     """
