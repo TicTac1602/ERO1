@@ -29,8 +29,9 @@ def deneigement_euler(place_name):
         return
 
     # Initialisation du graphe
-    graph = ox.graph_from_place(place_name, network_type="drive", simplify=False, retain_all=True)
-
+    graph = ox.graph_from_place(place_name, network_type="drive")
+    # convert your MultiDiGraph to a DiGraph without parallel edges
+    # D = ox.utils_graph.get_digraph(graph)
     # Situation initiale
     chemin_parcouru = None
     distance_totale = None
@@ -86,17 +87,18 @@ def make_it_eulerian(graph):
                 out_node = node
             else:
                 in_node = node
-            for distances,node_d,path in distances:
-                if in_node is None: 
+            for distance,node_d,path in distances:
+                if (graph.in_degree(node) == graph.out_degree(node)):
+                    break
+                if in_node is None and graph.out_degree(node_d) > graph.in_degree(node_d): 
                     in_node = node_d
-                else:
+                elif graph.out_degree(node_d) < graph.in_degree(node_d):
                     out_node = node_d
-                edge_length = graph.get_edge_data(in_node, out_node)[0]["length"]
-                graph.add_edge(in_node, out_node, directed=False, length=edge_length)    
+                if in_node != None and out_node != None : 
+                    graph.add_edge(out_node, in_node, directed=False, length=distance)
         odd_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
         if len(odd_nodes) % 100 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(odd_nodes)) / nb_todo) * 100, 2), "%")
-        print(len(odd_nodes))
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Le graphe a été rendu Eulerien")
     eulerian_cycle, distance = parcourir_aretes_euler(graph)
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
@@ -114,6 +116,7 @@ def parcourir_aretes_euler(graph):
     if not nx.is_eulerian(graph):
         return None, None
     cycle = find_eulerian_cycle(graph)
+    print(cycle)
     list = [[cycle[i], cycle[i + 1]] for i in range(len(cycle) - 1)]
     distance_totale = sum(graph.get_edge_data(u, v)[0]["length"] for u, v in list)
     return list, distance_totale
@@ -135,18 +138,31 @@ def find_eulerian_cycle(graph):
     # Liste pour stocker le cycle eulérien
     curr_path = [list(modified_graph.nodes())[0]]
     eulerian_cycle = []
+    visited_edges = set()
     current_node = curr_path[0]
     while len(curr_path):
         neighbors = list(modified_graph.successors(current_node))
-        if neighbors:
+        next_node = None
+
+        # Find the next unvisited neighbor
+        for neighbor in neighbors:
+            edge = (current_node, neighbor)
+            reverse_edge = (neighbor, current_node)
+            if edge not in visited_edges and reverse_edge not in visited_edges:
+                next_node = neighbor
+                visited_edges.add(edge)
+                break
+
+        if next_node is not None:
             curr_path.append(current_node)
-            next_node = neighbors[-1]
             modified_graph.remove_edge(current_node, next_node)
             current_node = next_node
         else:
             eulerian_cycle.append(current_node)
             current_node = curr_path[-1]
             curr_path.pop()
+
     return eulerian_cycle
+
 
 deneigement_euler("outremont")
