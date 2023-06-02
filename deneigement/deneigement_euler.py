@@ -38,10 +38,9 @@ def deneigement_euler(place_name):
     distance_totale = None
 
     start = time.time()
-    visualize_condensation_graph(graph,[3691019539, 5412399379])
+    visualize_condensation_graph(graph)
     fix_dead_end(graph)
     fix_source(graph)
-    print(nx.is_strongly_connected(graph))
     found, chemin_parcouru, distance_totale = make_it_eulerian(graph)
     print(chemin_parcouru,distance_totale)
     end = time.time()
@@ -120,15 +119,36 @@ def dijkstra_inverted_reinject(graph, node, visited):
                 edge_length = graph.get_edge_data(neighbor, current_node)[0]["length"]
                 heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
     return res
+def dijkstra_reinject(graph, node, visited):
+    """
+    Effectue l'algorithme de Dijkstra à partir d'un nœud donné dans le graphe.
 
-def visualize_condensation_graph(condensation_graph,node_to_find=[209387103]):
+    @param graph: Graphe à parcourir.
+    @param node: Nœud de départ du parcours.
+    @param visited: Ensemble des nœuds visités.
+    @return: Tuple contenant le nœud de degré impair ayant la plus petite distance, la distance pour y arriver et le chemin parcouru.
+    """
+
+    heap = []
+    heapq.heappush(heap, (0, node, [node]))
+    res = []
+    while heap:
+        distance, current_node, path = heapq.heappop(heap)
+        visited.add(current_node)
+        if len(visited) > 1 and graph.out_degree(current_node) == graph.in_degree(current_node):
+            # Sélection du nœud de degré impair ayant la plus petite distance
+            res.append((distance,current_node,path))
+        for neighbor in graph.successors(current_node):
+            if neighbor not in visited:
+                edge_length = graph.get_edge_data(current_node,neighbor,)[0]["length"]
+                heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
+    return res
+
+def visualize_condensation_graph(condensation_graph,node_to_find=None):
     pos = nx.spring_layout(condensation_graph)
-    # edge_labels = {(u, v): round(d['distance'],3) for u, v, d in condensation_graph.edges(data=True)}
-
     nx.draw(condensation_graph, pos, with_labels=False, node_size=50, node_color='lightblue', edge_color='gray', arrows=True)
-    # nx.draw_networkx_edge_labels(condensation_graph, pos, edge_labels="test")
     nx.draw_networkx_nodes(condensation_graph, pos, nodelist=node_to_find, node_color='red', node_size=100)
-    plt.title("Graphe de condensation")
+    plt.title("Graphe")
     plt.show()
 
 def fix_source(graph):
@@ -160,57 +180,39 @@ def make_it_eulerian(graph):
     @param graph: Graphe à transformer en graphe eulérien.
     @return: Tuple contenant un indicateur si un chemin eulérien a été trouvé, le chemin parcouru (liste d'arêtes) et la distance totale parcourue (float).
     """
-    unbalanced_nodes = []
-
-    for node in graph:
-            in_degree = graph.in_degree(node)
-            out_degree = graph.out_degree(node)
-            if in_degree != out_degree:
-                unbalanced_nodes.append(node)
+    unbalanced_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
     nb_todo = len(unbalanced_nodes)
 
-    first=True
-    while(first or len(unbalanced_nodes)>2):
+    while len(unbalanced_nodes):
 
-        first=False
-
-        node= unbalanced_nodes[0]
-        if(graph.out_degree(node)==0):
-            edge_length = graph.get_edge_data(list(graph.predecessors(node))[0], node)[0]["length"]
-            graph.add_edge(node, list(graph.predecessors(node))[0], directed=True, length=edge_length)
-            continue
-
+        node= unbalanced_nodes[0]      
         if(graph.in_degree(node)>graph.out_degree(node)):
             distances = dijkstra(graph, node, set())
             if not distances:
                 distances = dijkstra_inverted_reinject(graph, node, set())
-                graph.add_edge(node, distances[-1][1], directed=True, length=distances[0][0]) 
-                continue
-            for distance,node_end,path in distances:
-                if(node_end  in unbalanced_nodes):
-                    # make a path to this node_end
-                    add_path(graph,path)
-                    break
-
+                graph.add_edge(node, distances[-1][1], directed=True, length=distances[1][0]) 
+            else :
+                for distance,node_end,path in distances:
+                    #link to a bad nodes that will help the situation
+                    if node_end in unbalanced_nodes and graph.in_degree(node_end) < graph.out_degree(node_end):
+                        # make a path to this node_end
+                        add_path(graph,path)
+                        break
         else:
             # ajouter un arc entrant
             distances = dijkstra_inverted(graph, node, set())
             if not distances:
-                distances = dijkstra_inverted_reinject(graph, node, set())
-                graph.add_edge(node, distances[-1][1], directed=True, length=distances[0][0]) 
-                continue
-            for distance,node_end,path in distances:
-                if(node_end  in unbalanced_nodes):
-                    # make a path to this node_end
-                    inverted_list = path[::-1]
-                    add_path(graph,inverted_list)
-                    break
-        unbalanced_nodes = []
-        for node in graph:
-            in_degree = graph.in_degree(node)
-            out_degree = graph.out_degree(node)
-            if in_degree != out_degree:
-                unbalanced_nodes.append(node)
+                distances = dijkstra_reinject(graph, node, set())
+                graph.add_edge(distances[-1][1], node , directed=True, length=distances[-1][0]) 
+            else :
+                for distance,node_end,path in distances:
+                    if node_end in unbalanced_nodes and graph.in_degree(node_end)>graph.out_degree(node_end):
+                        # make a path to this node_end
+                        inverted_list = path[::-1]
+                        add_path(graph,inverted_list)
+                        break
+        unbalanced_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
+
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
 
@@ -220,11 +222,11 @@ def make_it_eulerian(graph):
     return True,chemin,distance_total
 
 def add_path(graph,path):
-    while(len(path)>1):
-        edge_length = graph.get_edge_data(path[0], path[1])[0]["length"]
-        graph.add_edge(path[0], path[1], directed=True, length=edge_length)
-        path.pop(0)
-    return
+    for i in range(len(path) - 1):
+        source = path[i]
+        destination = path[i + 1]
+        edge_length = graph.get_edge_data(source, destination)[0]["length"]
+        graph.add_edge(source, destination, directed=False, length=edge_length)
 
 def parcourir_aretes_euler(graph,sources):
     """
@@ -235,7 +237,7 @@ def parcourir_aretes_euler(graph,sources):
     @return: Tuple contenant la liste des arêtes parcourues dans le cycle eulérien et la distance totale parcourue (float).
     """
 
-    if not nx.has_eulerian_path(graph,sources[0]):
+    if not nx.is_eulerian(graph):
         return None, None
     cycle = find_eulerian_cycle(graph)
     print(cycle)
@@ -287,4 +289,4 @@ def find_eulerian_cycle(graph):
     return eulerian_cycle
 
 
-deneigement_euler("outremont")
+deneigement_euler("verdun")

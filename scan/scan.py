@@ -57,9 +57,6 @@ def scan(place_name, verbose=False):
     # Parcours des arêtes et calcul de la distance totale
     start = time.time()
     found, chemin_parcouru, distance_totale = make_it_eulerian(GU,verbose)
-    if not found:
-        print("Calcul du chemin en glouton")
-        chemin_parcouru, distance_totale = parcourir_aretes(GU)
     end = time.time()
 
     # Affichage des informations
