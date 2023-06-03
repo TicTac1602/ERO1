@@ -28,6 +28,26 @@ Vous aurez plusieurs possibilité de commandes, voici une liste non exhaustive :
 
 Par défault si aucun arguments n'est donné vous lancer le programme de "Déneigement de Montreal"
 
+A titre d'exemple `python main.py --place verdun --scenario deneigement` lancera le deneigement de verdun qui prend 1 s
+
+Pour un peu plus de détails voici un tableau recapitulatid des temps :
+
+|  Scenario   |   Quartier    |   Temps    |
+| :---------: | :-----------: | :--------: |
+|    scan     |   Montreal    |  `7 min`   |
+|    scan     |   Outremont   |  `1 sec`   |
+|    scan     |    Verdun     |  `2 sec`   |
+|    scan     | Saint Leonard |  `2 sec`   |
+|    scan     |  Mont Royal   |  `1 sec`   |
+|    scan     |    Rivière    |  `10 sec`  |
+| deneigement |   Outremont   |  `1 sec`   |
+| deneigement |    Verdun     |  `2 sec`   |
+| deneigement | Saint Leonard |  `2 min`   |
+| deneigement |  Mont Royal   | `Not done` |
+| deneigement |    Riviere    | `Not done` |
+
+NB: Ces temps on été réaliser sur un processeur Intel(R) Core(TM) i7-10750H et 16GB de RAM. Vos temps peuvent varier en fonction de votre matériel
+
 Il ne vous reste plus qu’à utiliser notre superbe programme 🎉
 
 ## L'architecture du projet 📐 :
