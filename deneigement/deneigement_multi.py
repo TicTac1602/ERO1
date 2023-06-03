@@ -3,10 +3,8 @@ import networkx as nx
 
 import matplotlib.pyplot as plt
 
-place_name = "Rivière-des-Prairies-Pointe-aux-Trembles, Montreal, Canada"
+place_name = "Outremont, Montreal, Canada"
 graph = ox.graph_from_place(place_name, network_type="drive")
-
-ox.plot_graph(graph, node_size=4)
 
 def tarjan_scc(graph):
     index = 0
@@ -44,7 +42,7 @@ def tarjan_scc(graph):
 
 def create_condensation_graph(graph, scc):
     condensation_graph = nx.DiGraph()
-    component_mapping = {}  # Dictionnaire de mapping des composantes vers les identifiants numériques
+    component_mapping = {}  # Dictionnaire des composantes vers les identifiants numériques
 
     for i, component in enumerate(scc):
         component_mapping[i] = component
@@ -94,10 +92,10 @@ def find_sources_and_sinks(condensation_graph):
             sources.append(node)
     return sources, sinks
 
-def find_path_macro(condensation_graph, source):
+def find_path_macro(condensation_graph,graph, source):
     path = []
     current_node = source
-
+    copy_condensation = condensation_graph.copy()
     while True:
         neighbors = list(condensation_graph.neighbors(current_node))
 
@@ -115,22 +113,80 @@ def find_path_macro(condensation_graph, source):
                 max_component_size = component_size
                 next_node = neighbor
 
-        path.append((current_node, next_node))
+        path.append(current_node)
         condensation_graph.remove_edge(current_node, next_node )
         current_node = next_node  
-    if condensation_graph.out_degree(source) == 0: 
-        condensation_graph.remove_node(source)
-    u,v = path[-1]
-    if condensation_graph.in_degree(v) == 0:
-        condensation_graph.remove_node(v)
-    return path
+    path_micro = find_path_micro(copy_condensation,graph,path)
+    return path,path_micro
 
-def deneigement_macro(sources,condensation):
+def find_path_micro(condensation_graph,graph,path):
+    path_micro = []
+    first = True
+    for scc in path:
+        if first:
+            source = None
+        else : 
+            prev_scc = path[path.index(scc) - 1]
+            source = None
+            out = False
+            for out_node in condensation_graph.nodes[prev_scc]['out']:
+                if out:
+                    break
+                for in_node in condensation_graph.nodes[scc]['go']:
+                    if graph.has_edge(out_node, in_node):
+                        source = in_node
+                        out = True
+                        break
+            
+        if scc == path[-1]:
+            destination = None
+        else:
+            next_scc = path[path.index(scc) + 1]
+            destination = None
+            out = False
+            for out_node in condensation_graph.nodes[scc]['out']:
+                if out:
+                    break
+                for in_node in condensation_graph.nodes[next_scc]['go']:
+                    if graph.has_edge(out_node, in_node):
+                        destination = out_node
+                        out = True
+                        break
+        path_micro.extend(explore_scc(condensation_graph,graph,scc,source,destination))
+        first = False
+    return path_micro
+
+def explore_scc(condensation_graph, graph, scc, source, destination):
+    path_scc = []
+
+    if scc in condensation_graph.nodes:
+        print('ouii')
+
+    # Recuperation des infos de chemin
+    if not source:
+        start_node = condensation_graph.nodes[scc]['go']
+        if start_node:
+            start_node = start_node[0]
+        else:
+            start_node = condensation_graph.nodes[scc]['component'][0]
+    else:
+        start_node = source
+    if not destination:
+        end_node = condensation_graph.nodes[scc]['out'][-1]
+    else:
+        end_node = destination
+    
+    # Explore la SCC
+    # TODO faire le chemin de source a destination
+    return path_scc
+
+
+def deneigement_macro(sources,condensation,graph):
     cpy_graph = condensation.copy()
     paths = []
     while sources:
-        path = find_path_macro(cpy_graph,sources[0])
-        paths.append(path)
+        path,path_micro = find_path_macro(cpy_graph,graph,sources[0])
+        paths.append(path_micro)
         sources, sinks = find_sources_and_sinks(cpy_graph)
     return paths
 
@@ -139,18 +195,18 @@ print(f"Nombres de composantes fortement connexes : {len(scc)}")
 
 condensation = create_condensation_graph(graph, scc)
 
-visualize_condensation_graph(condensation)
+# visualize_condensation_graph(condensation)
 
 sources, sinks = find_sources_and_sinks(condensation)
 print("Sources :", sources)
 print("Puits :", sinks)
 
-paths = deneigement_macro(sources, condensation)
+paths = deneigement_macro(sources, condensation,graph)
 print("Chemin :", paths)
 
 pos = nx.spring_layout(condensation)
 nx.draw(condensation, pos, with_labels=True, node_size=50, node_color='lightblue', edge_color='gray', arrows=True)
-for path in paths :
-    nx.draw_networkx_edges(condensation, pos, edgelist=path, edge_color='red', arrows=True)
+
+ox.plot_graph_routes(graph, paths)
 plt.show()
  
