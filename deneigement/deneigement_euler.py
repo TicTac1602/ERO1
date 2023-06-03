@@ -14,6 +14,23 @@ lieux = {
     "saintLeonard": "Saint-Léonard, Montreal, Canada"
 }
 
+deneigeuse_T1 = {
+    "nom" : "deneigeuse Type1",
+    "vitesse" :  10,
+    "cout_jour": 500,
+    "cout_kilo": 1.1,
+    "cout_horaires_8":1.1,
+    "cout_horaires_8p":1.3
+}
+
+deneigeuse_T2 = {
+    "nom" : "deneigeuse Type2",
+    "vitesse" :  20,
+    "cout_jour": 800,
+    "cout_kilo": 1.3,
+    "cout_horaires_8":1.3,
+    "cout_horaires_8p":1.5
+}
 
 def deneigement_euler(place_name,vehicule = None):
     """
@@ -56,8 +73,8 @@ def deneigement_euler(place_name,vehicule = None):
         cout_journalier,time_travel = calculer_prix(vehicule, distance_totale)
         print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Temps estimé du parcours :",round(time_travel,2) ,"h")
         print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Cout estimé du déneigement :",round(cout_journalier,2)  ,"€")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "\033[0;31mFin du déneigement\033[0m")
-    return chemin_parcouru, distance_totale
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "\033[0;36mFin du déneigement\033[0m")
+    return chemin_parcouru, distance_totale,graph
 
 def calculer_meilleur_choix(vehicules, quartiers):
     """
@@ -334,3 +351,33 @@ def trouver_cycle_eulerien(graph):
         sommets_visites.append(arc[1])
     
     return sommets_visites
+
+def splitDeneigeuse(place,type1,type2):
+    print(f"{datetime.now().strftime('[%d/%m %H:%M:%S]')} \033[0;36mLancement du deneigement avec {type1} deneigeuse de type 1 et {type2} deneigeuse de type 2\033[0;00m")
+    chemin_parcouru, distance_totale,graph =  deneigement_euler(place)
+    result = []
+    curr = 0
+    next_step = distance_totale / (type1+type2)
+    curr_path = []
+    for u,v in chemin_parcouru:
+        if next_step < curr:
+            result.append([curr_path,curr])
+            curr = 0
+            e = []
+        curr_path.append((u,v))
+        curr += graph.get_edge_data(u,v)[0]['length']
+    if len(curr_path) != 0:
+        result.append([curr_path,curr])
+    prix = 0
+    max_time = 0
+    for res in result: 
+        if (type2 > 0):
+            cout, time_travel = calculer_prix(deneigeuse_T2, res[1])
+            type2-=1
+        else:
+            cout, time_travel = calculer_prix(deneigeuse_T1, res[1])
+        if time_travel > max_time:
+            max_time = time_travel
+        prix += cout
+    print(f"{datetime.now().strftime('[%d/%m %H:%M:%S]')} \033[32mFaire tourner ces deneigeuses coutera : {prix} € et prendra {round(max_time,2)} h\033[0m")
+    return result
