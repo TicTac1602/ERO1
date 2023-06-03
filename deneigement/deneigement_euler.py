@@ -214,14 +214,23 @@ def make_it_eulerian(graph):
     """
     unbalanced_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
     nb_todo = len(unbalanced_nodes)
-
+    count=0
     while len(unbalanced_nodes):
 
-        node= unbalanced_nodes[0]      
+        node= unbalanced_nodes[0] 
+        if( len(unbalanced_nodes)==2):
+            count+=1
+            if(count>2):
+                unbalanced_nodes.reverse()
+                node= unbalanced_nodes[0] 
         if(graph.in_degree(node)>graph.out_degree(node)):
             distances = dijkstra(graph, node, set())
             if not distances:
-                distances = dijkstra_inverted_reinject(graph, node, set())
+                
+
+                distances = dijkstra(graph, node, set())
+                if not distances:
+                    distances = dijkstra_inverted_reinject(graph, node, set())
                 graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0]) 
             else :
                 found = False
