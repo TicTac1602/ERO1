@@ -14,23 +14,8 @@ lieux = {
     "saintLeonard": "Saint-Léonard, Montreal, Canada"
 }
 
-deneigeuse_T1 = {
-    "vitesse" :  10,
-    "cout_jour": 500,
-    "cout_kilo": 1.1,
-    "cout_horaires_8":1.1,
-    "cout_horaires_8p":1.3
-}
 
-deneigeuse_T2 = {
-    "vitesse" :  20,
-    "cout_jour": 800,
-    "cout_kilo": 1.3,
-    "cout_horaires_8":1.3,
-    "cout_horaires_8p":1.5
-}
-
-def deneigement_euler(place_name,vehicule):
+def deneigement_euler(place_name,vehicule = None):
     """
     Effectue le déneigement d'un quartier
     @param place_name: Nom de la région à déneiger
@@ -41,14 +26,13 @@ def deneigement_euler(place_name,vehicule):
     if place_name in lieux:
         place_name = lieux[place_name]
     else:
-        print(place_name, " n'est pas un emplacement géré dans ce projet")
+        print(place_name, " n'est pas un emplacement géré dans le deneigement")
         print("Les quartiers gérés sont : [outremont,verdun,montRoyal,riviere,saintLeonard]")
         return
 
     # Initialisation du graphe
     graph = ox.graph_from_place(place_name, network_type="drive")
-    ox.plot_graph(graph)
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graphique de la région",place_name, "chargé !")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "\033[0;36mGraphique de la région",place_name, "chargé !\033[0m")
 
     # Situation initiale
     chemin_parcouru = None
@@ -64,14 +48,15 @@ def deneigement_euler(place_name,vehicule):
     chemin_parcouru, distance_totale = make_it_eulerian(graph)
     end = time.time()
 
-    # Calcul du prix
-    cout_journalier,time_travel = calculer_prix(vehicule, distance_totale)
-
+    #Affichage des stats
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Chemin trouvé en",round(end - start,4), "s")
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Distance totale parcourue :",round(distance_totale/1000,2), "km")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Temps estimé du parcours :",round(time_travel,2) ,"h")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Cout estimé du déneigement :",cout_journalier  ,"€")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Fin du déneigement")
+    # Calcul du prix
+    if vehicule is not None : 
+        cout_journalier,time_travel = calculer_prix(vehicule, distance_totale)
+        print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Temps estimé du parcours :",round(time_travel,2) ,"h")
+        print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Cout estimé du déneigement :",round(cout_journalier,2)  ,"€")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "\033[0;31mFin du déneigement\033[0m")
     return chemin_parcouru, distance_totale
 
 def calculer_meilleur_choix(vehicules, quartiers):
@@ -83,21 +68,21 @@ def calculer_meilleur_choix(vehicules, quartiers):
     @return: Les meilleurs choix pour chaque quartiers
     """
     meilleur_choix = {}  # Utiliser un dictionnaire pour stocker les résultats
-
     for quartier in quartiers:
         meilleur_vehicule = None
         meilleur_prix = float('inf')  # initialiser à une valeur élevée pour trouver le prix minimum
 
+        chemin_parcouru, distance_totale =  deneigement_euler(quartier)
         for vehicule in vehicules:
-            chemin_parcouru, distance_totale =  deneigement_euler(quartier, vehicule)
-            prix = calculer_prix(vehicule, quartier)
+            prix,time_travel= calculer_prix(vehicule, distance_totale)
 
             if prix < meilleur_prix:
                 meilleur_prix = prix
                 meilleur_vehicule = vehicule
 
-        meilleur_choix[quartier] = meilleur_vehicule
-
+        meilleur_choix[quartier] = {"Vehicule": meilleur_vehicule["nom"],"Itinéraire":chemin_parcouru,"Distance du trajet":distance_totale,"prix" : meilleur_prix}
+    for choix in meilleur_choix:
+        print(f"{datetime.now().strftime('[%d/%m %H:%M:%S]')} \033[0;32mLe meilleur choix pour {choix} : {meilleur_choix[choix]['Vehicule']} pour {round(meilleur_choix[choix]['prix'],2)} €\033[0m")
     return meilleur_choix
 
 def calculer_prix(vehicule,distance_totale):
@@ -121,7 +106,6 @@ def calculer_prix(vehicule,distance_totale):
         cout_journalier += math.ceil(time_travel)*vehicule["cout_horaires_8"]
     cout_journalier += math.ceil(distance_totale/1000)*vehicule["cout_kilo"]
     return cout_journalier,time_travel
-
 
 def dijkstra(graph, node, visited):
     """
@@ -171,6 +155,7 @@ def dijkstra_inverted(graph, node, visited):
                 edge_length = graph.get_edge_data(neighbor, current_node)[0]["length"]
                 heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
     return res
+
 def dijkstra_inverted_reinject(graph, node, visited):
     """
     Effectue l'algorithme de Dijkstra à partir d'un nœud donné dans le graphe.
@@ -195,6 +180,7 @@ def dijkstra_inverted_reinject(graph, node, visited):
                 edge_length = graph.get_edge_data(neighbor, current_node)[0]["length"]
                 heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
     return res
+
 def dijkstra_reinject(graph, node, visited):
     """
     Effectue l'algorithme de Dijkstra à partir d'un nœud donné dans le graphe.
@@ -253,18 +239,15 @@ def make_it_eulerian(graph):
     nb_todo = len(unbalanced_nodes)
     count=0
     while len(unbalanced_nodes):
-
         node= unbalanced_nodes[0] 
         if( len(unbalanced_nodes)==2):
             count+=1
-            if(count>2):
+            if(count>1):
                 unbalanced_nodes.reverse()
                 node= unbalanced_nodes[0] 
         if(graph.in_degree(node)>graph.out_degree(node)):
             distances = dijkstra(graph, node, set())
             if not distances:
-                
-
                 distances = dijkstra(graph, node, set())
                 if not distances:
                     distances = dijkstra_inverted_reinject(graph, node, set())
@@ -295,11 +278,8 @@ def make_it_eulerian(graph):
                         add_path(graph,inverted_list)
                         break
         unbalanced_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
-
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
-        # if round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2) >= 97 :
-        #     print("debug")
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Le graphe a été rendu Eulerien")
     chemin,distance_totale = parcourir_aretes_euler(graph)
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
@@ -342,7 +322,6 @@ def trouver_cycle_eulerien(graph):
     @return: la liste des arêtes parcourues.
     """
 
-    # Vérifier si le graphe est fortement connexe
     if not nx.is_strongly_connected(graph) and nx.is_eulerian(graph):
         return None
     
@@ -355,9 +334,3 @@ def trouver_cycle_eulerien(graph):
         sommets_visites.append(arc[1])
     
     return sommets_visites
-
-# deneigement_euler("verdun",deneigeuse_T2) # (1 sec)
-# deneigement_euler("saintLeonard",deneigeuse_T2) # (2 sec)
-# deneigement_euler("montRoyal",deneigeuse_T2) # (3 min)
-# deneigement_euler("riviere",deneigeuse_T2) # (13 min)
-deneigement_euler("outremont",deneigeuse_T2) # ()
