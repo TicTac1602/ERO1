@@ -1,10 +1,9 @@
 import argparse
-import os
 import sys
 sys.path.append('./deneigement')
 sys.path.append('./scan')
 from scan import scan
-from deneigement.deneigement_euler import deneigement_euler,calculer_meilleur_choix
+from deneigement.deneigement_euler import deneigement_euler,meilleur_split
 
 deneigeuse_T1 = {
     "nom" : "deneigeuse Type1",
@@ -31,9 +30,18 @@ def run_scenario(scenario, place, multi=None):
             return scan(place)
     elif scenario == "deneigement":
         if multi is not None:
-            return calculer_meilleur_choix([deneigeuse_T1,deneigeuse_T2], multi)
+            return meilleur_split(multi)
         else:
             return deneigement_euler(place,deneigeuse_T1)
+    elif scenario == "presentation":
+        if place != "montreal":
+            scan(place)
+            input()
+            deneigement_euler(place,deneigeuse_T1)
+            input()
+            meilleur_split(["outremont","verdun","saintLeonard"])
+        else:
+            print(f"Pour le bien de cette présentation nous ne nous pencherons pas sur ce quartier !")
 
 
 def main():
@@ -47,9 +55,9 @@ def main():
     if args.scenario == 'scan':
         return run_scenario(args.scenario, args.place)
     elif args.scenario == 'deneigement':
-        run_scenario(args.scenario, args.place,args.multi)  # Ajouter un cas si nécessaire
+        run_scenario(args.scenario, args.place,args.multi)
     elif args.scenario == 'presentation':
-        run_scenario(args.scenario, None)  # Ajouter un cas si nécessaire
+        run_scenario(args.scenario, args.place)
 
 # Appel de la fonction main() lorsque le fichier est exécuté
 if __name__ == '__main__':
