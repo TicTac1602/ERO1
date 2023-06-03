@@ -25,7 +25,7 @@ Vous aurez plusieurs possibilité de commandes, voici une liste non exhaustive :
 
 - `--place` avec le quartier souahité
 - `--scenario` avec le scenario souhaité
-- `--multi` avec les quartiers souahité
+- `--multi` avec les quartiers souahaité
 
 Par défault si aucun arguments n'est donné vous lancer le programme de "Déneigement de Montreal"
 
