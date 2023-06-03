@@ -3,7 +3,9 @@ import networkx as nx
 import heapq
 import math
 import time
+import numpy as np
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 # Dictionnaire des correspondances entre les noms de lieux et leurs emplacements
 lieux = {
@@ -148,6 +150,7 @@ def dijkstra(graph, node, visited):
                 edge_length = graph.get_edge_data(current_node, neighbor)[0]["length"]
                 heapq.heappush(heap, (distance + edge_length, neighbor, path + [neighbor]))
     return res
+
 def dijkstra_inverted(graph, node, visited):
     """
     Effectue l'algorithme de Dijkstra à partir d'un nœud donné dans le graphe.
@@ -288,12 +291,17 @@ def make_it_eulerian(graph):
                 distances = dijkstra_reinject(graph, node, set())
                 graph.add_edge(distances[-1][1], node , directed=True, length=distances[-1][0]) 
             else :
+                found = False
                 for distance,node_end,path in distances:
                     if node_end in unbalanced_nodes and graph.in_degree(node_end)>graph.out_degree(node_end):
                         # make a path to this node_end
+                        found = True
                         inverted_list = path[::-1]
                         add_path(graph,inverted_list)
                         break
+                if not found: 
+                    distances = dijkstra_inverted_reinject(graph, node, set())
+                    graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0])
         unbalanced_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
@@ -352,9 +360,9 @@ def trouver_cycle_eulerien(graph):
     
     return sommets_visites
 
-def splitDeneigeuse(place,type1,type2):
-    print(f"{datetime.now().strftime('[%d/%m %H:%M:%S]')} \033[0;36mLancement du deneigement avec {type1} deneigeuse de type 1 et {type2} deneigeuse de type 2\033[0;00m")
-    chemin_parcouru, distance_totale,graph =  deneigement_euler(place)
+def splitDeneigeuse(chemin_parcouru,distance_totale,graph,type1,type2):
+    if type1 == 0 and type2 == 0 :
+        return [None,float('inf'),float('inf')]
     result = []
     curr = 0
     next_step = distance_totale / (type1+type2)
@@ -363,7 +371,7 @@ def splitDeneigeuse(place,type1,type2):
         if next_step < curr:
             result.append([curr_path,curr])
             curr = 0
-            e = []
+            curr_path = []
         curr_path.append((u,v))
         curr += graph.get_edge_data(u,v)[0]['length']
     if len(curr_path) != 0:
@@ -379,5 +387,56 @@ def splitDeneigeuse(place,type1,type2):
         if time_travel > max_time:
             max_time = time_travel
         prix += cout
-    print(f"{datetime.now().strftime('[%d/%m %H:%M:%S]')} \033[32mFaire tourner ces deneigeuses coutera : {prix} € et prendra {round(max_time,2)} h\033[0m")
-    return result
+    return [result,max_time,prix]
+
+def plot_possibilities(place, possibilities):
+    config_labels = [f"{p[1]}-{p[2]}" for p in possibilities]
+    y_time = [p[0][1] for p in possibilities]
+    y_price = [p[0][2] for p in possibilities]
+    
+    x = np.arange(len(config_labels))
+
+    fig, ax1 = plt.subplots()
+
+    ax1.bar(x, y_time, color='b')
+    ax1.set_xlabel('Configuration')
+    ax1.set_ylabel('Temps (heures)')
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(config_labels, rotation='vertical')
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, y_price, 'r.-')
+    ax2.set_ylabel('Prix (€)')
+
+    plt.title(f"Possibilités de déneigement pour {place}")
+    plt.tight_layout()
+    plt.show()
+
+def meilleur_split(places):
+    bests = []
+    for place in places:
+        chemin_parcouru, distance_totale, graph =  deneigement_euler(place)
+        all_possibilities = []
+        best_in_time = [splitDeneigeuse(chemin_parcouru, distance_totale,graph , 0, 0),0,0]
+        best_in_price = [splitDeneigeuse(chemin_parcouru, distance_totale,graph , 0, 0),0,0]
+        best_average = [splitDeneigeuse(chemin_parcouru, distance_totale,graph , 0, 0),0,0]
+        for i in range(10):
+            for j in range(10):
+                if i==0 and j == 0:
+                    continue
+                result,max_time,prix = splitDeneigeuse(chemin_parcouru, distance_totale,graph, i, j)
+                all_possibilities.append([[result,max_time,prix],i,j])
+                if prix < best_in_price[0][2]:
+                    best_in_price = [[result,max_time,prix],i,j]
+                if max_time < best_in_time[0][1]:
+                    best_in_time = [[result,max_time,prix],i,j]
+                if (max_time*3600 + prix) < (best_average[0][1]*3600 + best_average[0][2]):
+                    best_average = [[result, max_time, prix], i, j]
+                # Affichage du prix et du temps de chaque itération
+        print(f"Pour {place} :")
+        print(f"\t Meilleur Temps : {round(best_in_time[0][1],2)} h avec un cout de {round(best_in_time[0][2],2)} €. Config Deneigeuse :[Type1 : {best_in_time[1]}, Type2: {best_in_time[2]} ]")
+        print(f"\t Meilleur Prix : {round(best_in_price[0][1],2)} h avec un cout de {round(best_in_price[0][2],2)} €. Config Deneigeuse :[Type1 : {best_in_price[1]}, Type2: {best_in_price[2]} ]")
+        print(f"\t Meilleur Compromis : {round(best_average[0][1],2)} h avec un cout de {round(best_average[0][2],2)} €. Config Deneigeuse :[Type1 : {best_average[1]}, Type2: {best_average[2]} ]")
+        plot_possibilities(place, all_possibilities)
+        bests.append((best_in_time,best_in_price,best_average))
+    return bests
