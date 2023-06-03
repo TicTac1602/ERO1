@@ -39,7 +39,7 @@ def scan(place_name, verbose=False):
     
     # Télécharger le graphe du réseau de rues du lieu spécifié
     graphique = ox.graph_from_place(place_name, network_type="drive")
-    ox.plot_graph(graphique, show=verbose)
+    ox.plot_graph(graphique, show=True)
     GU = graphique.to_undirected()
     if not nx.is_connected(GU):
         print("Le graphe n'est pas connexe.")
