@@ -4,8 +4,7 @@ import heapq
 import math
 import time
 from datetime import datetime
-import matplotlib.pyplot as plt
-import random
+
 # Dictionnaire des correspondances entre les noms de lieux et leurs emplacements
 lieux = {
     "outremont": "Outremont, Montreal, Canada",
@@ -35,6 +34,7 @@ def deneigement_euler(place_name,vehicule):
     """
     Effectue le déneigement d'un quartier
     @param place_name: Nom de la région à déneiger
+    @param vehicule: Véhicule qui va deneiger
     """
 
     # Vérification des arguments
@@ -64,7 +64,50 @@ def deneigement_euler(place_name,vehicule):
     chemin_parcouru, distance_totale = make_it_eulerian(graph)
     end = time.time()
 
-    # Affichage des informations
+    # Calcul du prix
+    cout_journalier,time_travel = calculer_prix(vehicule, distance_totale)
+
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Chemin trouvé en",round(end - start,4), "s")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Distance totale parcourue :",round(distance_totale/1000,2), "km")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Temps estimé du parcours :",round(time_travel,2) ,"h")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Cout estimé du déneigement :",cout_journalier  ,"€")
+    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Fin du déneigement")
+    return chemin_parcouru, distance_totale
+
+def calculer_meilleur_choix(vehicules, quartiers):
+    """
+    Trouve le meilleur vehicule pour chaque quartiers
+
+    @param vehicule: Le type de deneigeuse.
+    @param quarties: Les quartiers que ont souahite etudier.
+    @return: Les meilleurs choix pour chaque quartiers
+    """
+    meilleur_choix = {}  # Utiliser un dictionnaire pour stocker les résultats
+
+    for quartier in quartiers:
+        meilleur_vehicule = None
+        meilleur_prix = float('inf')  # initialiser à une valeur élevée pour trouver le prix minimum
+
+        for vehicule in vehicules:
+            chemin_parcouru, distance_totale =  deneigement_euler(quartier, vehicule)
+            prix = calculer_prix(vehicule, quartier)
+
+            if prix < meilleur_prix:
+                meilleur_prix = prix
+                meilleur_vehicule = vehicule
+
+        meilleur_choix[quartier] = meilleur_vehicule
+
+    return meilleur_choix
+
+def calculer_prix(vehicule,distance_totale):
+    """
+    Calcul le prix d'un vehicule pour une certaines distance
+
+    @param vehicule: Le type de deneigeuse.
+    @param distance_totale: La distance totale couverte par ce vehicule .
+    @return: Le prix du deneigement
+    """
     time_travel = (distance_totale/1000)/vehicule["vitesse"]
     daily_cost = math.ceil(time_travel/24)
 
@@ -77,14 +120,8 @@ def deneigement_euler(place_name,vehicule):
     else : 
         cout_journalier += math.ceil(time_travel)*vehicule["cout_horaires_8"]
     cout_journalier += math.ceil(distance_totale/1000)*vehicule["cout_kilo"]
+    return cout_journalier,time_travel
 
-
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Chemin trouvé en",round(end - start,4), "s")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Distance totale parcourue :",round(distance_totale/1000,2), "km")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"),"Temps estimé du parcours :",round(time_travel,2) ,"h")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Cout estimé du déneigement :",cout_journalier  ,"€")
-    print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Fin du déneigement")
-    return chemin_parcouru, distance_totale
 
 def dijkstra(graph, node, visited):
     """
@@ -207,7 +244,7 @@ def fix_dead_end(graph):
 
 def make_it_eulerian(graph):
     """
-    Transforme le graphe en un graphe eulérien en ajoutant des arêtes supplémentaires.
+    Transforme le graphe en un graphe eulérien en ajoutant des arêtes supplémentaires. Et trouve un cycle dans ce graphe modifier
 
     @param graph: Graphe à transformer en graphe eulérien.
     @return: Tuple contenant un indicateur si un chemin eulérien a été trouvé, le chemin parcouru (liste d'arêtes) et la distance totale parcourue (float).
@@ -261,8 +298,8 @@ def make_it_eulerian(graph):
 
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
-        if round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2) >= 83.8 :
-            print("debug")
+        # if round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2) >= 97 :
+        #     print("debug")
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Le graphe a été rendu Eulerien")
     chemin,distance_totale = parcourir_aretes_euler(graph)
     print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Un itinéraire a été trouvé")
@@ -270,6 +307,12 @@ def make_it_eulerian(graph):
     return chemin,distance_totale
 
 def add_path(graph,path):
+    """
+    Ajoute dans le graph le chemin renseigné
+
+    @param graph: Graphe eulérien à parcourir.
+    @param path: Chemin a suivre
+    """
     for i in range(len(path) - 1):
         source = path[i]
         destination = path[i + 1]
@@ -281,7 +324,6 @@ def parcourir_aretes_euler(graph):
     Parcourt les arêtes du graphe eulérien pour former un cycle eulérien.
 
     @param graph: Graphe eulérien à parcourir.
-    @param verbose: Indicateur pour l'affichage détaillé.
     @return: Tuple contenant la liste des arêtes parcourues dans le cycle eulérien et la distance totale parcourue (float).
     """
 
@@ -293,6 +335,13 @@ def parcourir_aretes_euler(graph):
     return list, distance_totale
 
 def trouver_cycle_eulerien(graph):
+    """
+    Parcourt les arêtes du graphe eulérien pour trouver le cycle eulérien.
+
+    @param graph: Graphe eulérien à parcourir.
+    @return: la liste des arêtes parcourues.
+    """
+
     # Vérifier si le graphe est fortement connexe
     if not nx.is_strongly_connected(graph) and nx.is_eulerian(graph):
         return None
@@ -307,4 +356,8 @@ def trouver_cycle_eulerien(graph):
     
     return sommets_visites
 
-deneigement_euler("riviere",deneigeuse_T2)
+# deneigement_euler("verdun",deneigeuse_T2) # (1 sec)
+# deneigement_euler("saintLeonard",deneigeuse_T2) # (2 sec)
+# deneigement_euler("montRoyal",deneigeuse_T2) # (3 min)
+# deneigement_euler("riviere",deneigeuse_T2) # (13 min)
+deneigement_euler("outremont",deneigeuse_T2) # ()
