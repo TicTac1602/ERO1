@@ -269,7 +269,10 @@ def make_it_eulerian(graph):
             distances = dijkstra(graph, node, set())
             if not distances:
                 distances = dijkstra_inverted_reinject(graph, node, set())
-                graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0]) 
+                if len(distances) > 4:
+                    graph.add_edge(node, distances[3][1], directed=True, length=distances[3][0]) 
+                else :
+                    graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0]) 
             else :
                 found = False
                 for distance,node_end,path in distances:
@@ -281,13 +284,19 @@ def make_it_eulerian(graph):
                         break
                 if not found: 
                     distances = dijkstra_inverted_reinject(graph, node, set())
-                    graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0])
+                    if len(distances) > 4:
+                        graph.add_edge(node, distances[3][1], directed=True, length=distances[3][0]) 
+                    else :
+                        graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0])
         else:
             # ajouter un arc entrant
             distances = dijkstra_inverted(graph, node, set())
             if not distances:
                 distances = dijkstra_reinject(graph, node, set())
-                graph.add_edge(distances[-1][1], node , directed=True, length=distances[-1][0]) 
+                if len(distances) > 4:
+                    graph.add_edge(distances[3][1],node, directed=True, length=distances[3][0]) 
+                else :
+                    graph.add_edge(distances[-1][1],node, directed=True, length=distances[-1][0])
             else :
                 found = False
                 for distance,node_end,path in distances:
@@ -299,7 +308,10 @@ def make_it_eulerian(graph):
                         break
                 if not found: 
                     distances = dijkstra_inverted_reinject(graph, node, set())
-                    graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0])
+                    if len(distances) > 4:
+                        graph.add_edge(distances[3][1],node, directed=True, length=distances[3][0]) 
+                    else :
+                        graph.add_edge(distances[-1][1],node, directed=True, length=distances[-1][0])
         unbalanced_nodes = [node for node in graph.nodes if graph.in_degree(node) != graph.out_degree(node)]
         if len(unbalanced_nodes) % 1 == 0:
             print(datetime.now().strftime("[%d/%m %H:%M:%S]"), "Graph Eulerien :", round(((nb_todo - len(unbalanced_nodes)) / nb_todo) * 100, 2), "%",end='\r')
@@ -445,5 +457,3 @@ def meilleur_split(places):
         plot_possibilities(place, all_possibilities)
         bests.append((best_in_time,best_in_price,best_average))
     return bests
-
-meilleur_split(["outremont"])
