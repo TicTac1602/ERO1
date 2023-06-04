@@ -259,8 +259,8 @@ def make_it_eulerian(graph):
     nb_todo = len(unbalanced_nodes)
     count=0
     while len(unbalanced_nodes):
-        node= unbalanced_nodes[0] 
-        if( len(unbalanced_nodes)==2):
+        node = unbalanced_nodes[0] 
+        if(len(unbalanced_nodes)==2):
             count+=1
             if(count>1):
                 unbalanced_nodes.reverse()
@@ -268,9 +268,7 @@ def make_it_eulerian(graph):
         if(graph.in_degree(node)>graph.out_degree(node)):
             distances = dijkstra(graph, node, set())
             if not distances:
-                distances = dijkstra(graph, node, set())
-                if not distances:
-                    distances = dijkstra_inverted_reinject(graph, node, set())
+                distances = dijkstra_inverted_reinject(graph, node, set())
                 graph.add_edge(node, distances[-1][1], directed=True, length=distances[-1][0]) 
             else :
                 found = False
@@ -362,7 +360,7 @@ def trouver_cycle_eulerien(graph):
 
 def splitDeneigeuse(chemin_parcouru,distance_totale,graph,type1,type2):
     if type1 == 0 and type2 == 0 :
-        return [None,float('inf'),float('inf')]
+        return [None,float('inf'),float('inf'),float('inf')]
     result = []
     curr = 0
     next_step = distance_totale / (type1+type2)
@@ -387,12 +385,14 @@ def splitDeneigeuse(chemin_parcouru,distance_totale,graph,type1,type2):
         if time_travel > max_time:
             max_time = time_travel
         prix += cout
-    return [result,max_time,prix]
+    return [result,max_time,prix,(max_time*3600+prix)]
 
 def plot_possibilities(place, possibilities):
+
     config_labels = [f"{p[1]}-{p[2]}" for p in possibilities]
     y_time = [p[0][1] for p in possibilities]
     y_price = [p[0][2] for p in possibilities]
+    y_ratio = [p[0][3] for p in possibilities]
     
     x = np.arange(len(config_labels))
 
@@ -407,6 +407,11 @@ def plot_possibilities(place, possibilities):
     ax2 = ax1.twinx()
     ax2.plot(x, y_price, 'r.-')
     ax2.set_ylabel('Prix (€)')
+
+    ax3 = ax1.twinx()
+    ax3.plot(x, y_ratio, 'y.-')
+    ax3.spines['right'].set_position(('outward', 60))
+    ax3.set_ylabel('Ratio')
 
     plt.title(f"Possibilités de déneigement pour {place}")
     plt.tight_layout()
@@ -424,14 +429,14 @@ def meilleur_split(places):
             for j in range(10):
                 if i==0 and j == 0:
                     continue
-                result,max_time,prix = splitDeneigeuse(chemin_parcouru, distance_totale,graph, i, j)
-                all_possibilities.append([[result,max_time,prix],i,j])
+                result,max_time,prix,ratio = splitDeneigeuse(chemin_parcouru, distance_totale,graph, i, j)
+                all_possibilities.append([[result,max_time,prix,ratio],i,j])
                 if prix < best_in_price[0][2]:
-                    best_in_price = [[result,max_time,prix],i,j]
+                    best_in_price = [[result,max_time,prix,ratio],i,j]
                 if max_time < best_in_time[0][1]:
-                    best_in_time = [[result,max_time,prix],i,j]
-                if (max_time*3600 + prix) < (best_average[0][1]*3600 + best_average[0][2]):
-                    best_average = [[result, max_time, prix], i, j]
+                    best_in_time = [[result,max_time,prix,ratio],i,j]
+                if ratio < best_average[0][3]:
+                    best_average = [[result, max_time, prix,ratio], i, j]
                 # Affichage du prix et du temps de chaque itération
         print(f"Pour {place} :")
         print(f"\t Meilleur Temps : {round(best_in_time[0][1],2)} h avec un cout de {round(best_in_time[0][2],2)} €. Config Deneigeuse :[Type1 : {best_in_time[1]}, Type2: {best_in_time[2]} ]")
@@ -440,3 +445,5 @@ def meilleur_split(places):
         plot_possibilities(place, all_possibilities)
         bests.append((best_in_time,best_in_price,best_average))
     return bests
+
+meilleur_split(["outremont"])
