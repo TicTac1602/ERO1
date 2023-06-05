@@ -36,10 +36,10 @@ Pour un peu plus de détails voici un tableau recapitulatifs des temps :
 |  Scenario   |   Quartier    |  Temps   |
 | :---------: | :-----------: | :------: |
 |    scan     |   Montreal    | `7 min`  |
-|    scan     |   Outremont   | `1 sec`  |
-|    scan     |    Verdun     | `2 sec`  |
-|    scan     | Saint Leonard | `2 sec`  |
-|    scan     |  Mont Royal   | `1 sec`  |
+|    scan     |   Outremont   | `4 sec`  |
+|    scan     |    Verdun     | `4 sec`  |
+|    scan     | Saint Leonard | `4 sec`  |
+|    scan     |  Mont Royal   | `6 sec`  |
 |    scan     |    Rivière    | `10 sec` |
 | deneigement |   Outremont   | `1 sec`  |
 | deneigement |    Verdun     | `2 sec`  |
