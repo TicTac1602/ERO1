@@ -46,7 +46,7 @@ def run_scenario(scenario, place, multi=None):
 
 def main():
     parser = argparse.ArgumentParser(description='ERO1 Optimisation Hivernale')
-    parser.add_argument('--scenario', choices=['scan', 'deneigement', 'presentation'], default='scan', help='Le scénario à exécuter (par défaut: scan)')
+    parser.add_argument('--scenario', choices=['scan', 'deneigement', 'presentation'], default='presentation', help='Le scénario à exécuter (par défaut: presentation)')
     parser.add_argument('--place', choices=['montreal', 'outremont', 'verdun', 'riviere', 'saintLeonard', 'montRoyal'], default='montreal', help="Choix de l'endroit ou effectuer le scenario (par défaut: montreal)")
     parser.add_argument('--multi', nargs='+',choices=['outremont', 'verdun', 'riviere', 'saintLeonard', 'montRoyal'] ,help="Exécuter le scénario de déneigement avec les quartiers spécifiés pour savoir laquelle choisir")
     
